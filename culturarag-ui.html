@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CulturaRAG — World Culture Explorer</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Mono:wght@300;400;500&family=Crimson+Pro:ital,wght@0,300;0,400;1,300&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #1a1209;
+    --parchment: #f5efe3;
+    --gold: #c9933a;
+    --gold-light: #e8b455;
+    --rust: #a84c2f;
+    --teal: #2a6b6e;
+    --teal-light: #3d9197;
+    --muted: #7a6e5f;
+    --card: #faf5ec;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--parchment); color: var(--ink); font-family: 'Crimson Pro', Georgia, serif; font-size: 18px; line-height: 1.7; min-height: 100vh; overflow-x: hidden; }
+  body::before { content: ''; position: fixed; inset: 0; background-image: radial-gradient(circle at 20% 20%, rgba(201,147,58,0.06) 0%, transparent 50%), radial-gradient(circle at 80% 80%, rgba(42,107,110,0.06) 0%, transparent 50%); pointer-events: none; z-index: 0; }
+  .container { max-width: 960px; margin: 0 auto; padding: 0 24px; position: relative; z-index: 1; }
+
+  /* Header */
+  header { padding: 48px 0 32px; text-align: center; border-bottom: 1px solid rgba(201,147,58,0.3); margin-bottom: 40px; }
+  .globe-icon { font-size: 48px; display: block; margin-bottom: 12px; animation: float 4s ease-in-out infinite; }
+  @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }
+  h1 { font-family: 'Playfair Display', serif; font-size: clamp(2.4rem,5vw,3.8rem); font-weight: 700; letter-spacing: -0.02em; line-height: 1.1; }
+  h1 span { color: var(--gold); }
+  .tagline { font-family: 'DM Mono', monospace; font-size: 0.75rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--muted); margin-top: 10px; }
+  .header-pills { display: flex; gap: 8px; justify-content: center; margin-top: 20px; flex-wrap: wrap; }
+  .pill { font-family: 'DM Mono', monospace; font-size: 0.65rem; letter-spacing: 0.1em; padding: 4px 12px; border-radius: 100px; border: 1px solid; }
+  .pill-gold { border-color: var(--gold); color: var(--gold); background: rgba(201,147,58,0.08); }
+  .pill-teal { border-color: var(--teal); color: var(--teal); background: rgba(42,107,110,0.08); }
+  .pill-rust { border-color: var(--rust); color: var(--rust); background: rgba(168,76,47,0.08); }
+
+  /* Tabs */
+  .tab-nav { display: flex; gap: 4px; margin-bottom: 32px; background: var(--card); border: 1px solid rgba(201,147,58,0.2); border-radius: 12px; padding: 4px; }
+  .tab-btn { flex: 1; font-family: 'DM Mono', monospace; font-size: 0.7rem; letter-spacing: 0.1em; text-transform: uppercase; padding: 10px; border: none; border-radius: 8px; cursor: pointer; background: none; color: var(--muted); transition: all 0.2s; }
+  .tab-btn.active { background: var(--ink); color: white; }
+  .tab-btn:hover:not(.active) { background: rgba(201,147,58,0.1); color: var(--ink); }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* Chips */
+  .examples { margin-bottom: 24px; }
+  .examples-title { font-family: 'DM Mono', monospace; font-size: 0.65rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--muted); margin-bottom: 12px; }
+  .example-chips { display: flex; gap: 8px; flex-wrap: wrap; }
+  .chip { font-family: 'Crimson Pro', serif; font-size: 0.85rem; padding: 6px 14px; border: 1px solid rgba(201,147,58,0.3); border-radius: 100px; cursor: pointer; color: var(--ink); background: var(--card); transition: all 0.2s; }
+  .chip:hover { background: rgba(201,147,58,0.1); border-color: var(--gold); color: var(--gold); }
+
+  /* Form */
+  .query-card { background: var(--card); border: 1px solid rgba(201,147,58,0.25); border-radius: 16px; padding: 28px; margin-bottom: 24px; box-shadow: 0 4px 24px rgba(26,18,9,0.06); }
+  .query-card h2 { font-family: 'Playfair Display', serif; font-size: 1.3rem; font-weight: 400; font-style: italic; margin-bottom: 20px; }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+  @media(max-width:600px){.form-row{grid-template-columns:1fr}}
+  .field { display: flex; flex-direction: column; gap: 6px; }
+  label { font-family: 'DM Mono', monospace; font-size: 0.65rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--muted); }
+  textarea, input, select { font-family: 'Crimson Pro', serif; font-size: 1rem; color: var(--ink); background: var(--parchment); border: 1px solid rgba(201,147,58,0.3); border-radius: 8px; padding: 10px 14px; transition: border-color 0.2s, box-shadow 0.2s; outline: none; width: 100%; }
+  textarea { resize: vertical; min-height: 80px; line-height: 1.5; }
+  textarea:focus, input:focus, select:focus { border-color: var(--gold); box-shadow: 0 0 0 3px rgba(201,147,58,0.12); }
+  select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23c9933a' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 14px center; padding-right: 36px; cursor: pointer; }
+
+  .btn-primary { width: 100%; padding: 14px; font-family: 'Playfair Display', serif; font-size: 1.1rem; font-style: italic; color: white; background: linear-gradient(135deg, var(--gold), var(--rust)); border: none; border-radius: 10px; cursor: pointer; transition: all 0.25s; margin-top: 8px; position: relative; overflow: hidden; }
+  .btn-primary::before { content:''; position:absolute; inset:0; background: linear-gradient(135deg, var(--gold-light), var(--gold)); opacity:0; transition:opacity 0.25s; }
+  .btn-primary:hover::before { opacity:1; }
+  .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(201,147,58,0.35); }
+  .btn-primary:disabled { opacity:0.6; cursor:not-allowed; transform:none; box-shadow:none; }
+  .btn-primary span { position:relative; z-index:1; }
+
+  .btn-secondary { font-family: 'DM Mono', monospace; font-size: 0.7rem; letter-spacing: 0.1em; text-transform: uppercase; padding: 10px 20px; background: var(--teal); color: white; border: none; border-radius: 8px; cursor: pointer; transition: all 0.2s; }
+  .btn-secondary:hover { background: var(--teal-light); transform: translateY(-1px); }
+  .btn-secondary:disabled { opacity:0.5; cursor:not-allowed; transform:none; }
+
+  /* Chat */
+  .chat-history { display: flex; flex-direction: column; gap: 20px; margin-bottom: 24px; }
+  .chat-turn { animation: slideUp 0.35s ease; }
+  @keyframes slideUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
+  .chat-question { display: flex; justify-content: flex-end; margin-bottom: 8px; }
+  .chat-question-bubble { background: linear-gradient(135deg, var(--ink), #2d2419); color: white; padding: 12px 18px; border-radius: 16px 16px 4px 16px; max-width: 75%; font-size: 0.95rem; line-height: 1.5; }
+  .chat-answer { background: var(--card); border: 1px solid rgba(201,147,58,0.2); border-radius: 4px 16px 16px 16px; overflow: hidden; }
+  .chat-answer-header { background: rgba(201,147,58,0.08); padding: 10px 16px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; border-bottom: 1px solid rgba(201,147,58,0.15); }
+  .meta-badge { font-family: 'DM Mono', monospace; font-size: 0.6rem; letter-spacing: 0.08em; padding: 2px 8px; border-radius: 100px; background: rgba(201,147,58,0.15); color: var(--muted); }
+  .meta-followup { background: rgba(42,107,110,0.15); color: var(--teal); }
+  .chat-answer-body { padding: 16px 18px; font-size: 1rem; line-height: 1.75; white-space: pre-wrap; }
+  .chat-sources { padding: 10px 18px 14px; border-top: 1px solid rgba(201,147,58,0.12); }
+  .sources-title { font-family: 'DM Mono', monospace; font-size: 0.6rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
+  .source-chips { display: flex; gap: 6px; flex-wrap: wrap; }
+  .source-chip { font-family: 'DM Mono', monospace; font-size: 0.6rem; padding: 3px 10px; border: 1px solid rgba(42,107,110,0.3); border-radius: 100px; color: var(--teal); background: rgba(42,107,110,0.06); }
+  .chat-feedback { padding: 8px 18px 12px; display: flex; align-items: center; gap: 12px; }
+  .feedback-label { font-family: 'DM Mono', monospace; font-size: 0.6rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+  .btn-feedback { font-size: 1rem; background: none; border: 1px solid rgba(201,147,58,0.2); border-radius: 6px; width: 30px; height: 30px; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; }
+  .btn-feedback:hover { background: rgba(201,147,58,0.1); transform: scale(1.1); }
+  .btn-feedback.active { background: rgba(201,147,58,0.2); border-color: var(--gold); }
+
+  /* Follow-up */
+  .followup-bar { background: var(--card); border: 1px solid rgba(42,107,110,0.3); border-radius: 12px; padding: 16px 20px; margin-bottom: 24px; display: none; }
+  .followup-bar.visible { display: block; }
+  .followup-bar label { font-family: 'DM Mono', monospace; font-size: 0.65rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--teal); display: block; margin-bottom: 8px; }
+  .followup-row { display: flex; gap: 10px; }
+  .followup-row input { flex: 1; }
+  .btn-followup { font-family: 'DM Mono', monospace; font-size: 0.68rem; letter-spacing: 0.08em; text-transform: uppercase; padding: 10px 18px; background: var(--teal); color: white; border: none; border-radius: 8px; cursor: pointer; transition: all 0.2s; white-space: nowrap; }
+  .btn-followup:hover { background: var(--teal-light); }
+  .btn-followup:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  /* Loading / Error */
+  .loading { display: none; text-align: center; padding: 32px 0; }
+  .loading.active { display: block; }
+  .loading-orb { width: 40px; height: 40px; border-radius: 50%; border: 3px solid rgba(201,147,58,0.2); border-top-color: var(--gold); animation: spin 0.9s linear infinite; margin: 0 auto 12px; }
+  @keyframes spin { to{transform:rotate(360deg)} }
+  .loading p { font-family: 'DM Mono', monospace; font-size: 0.72rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--muted); animation: pulse 1.5s ease-in-out infinite; }
+  @keyframes pulse { 0%,100%{opacity:0.5} 50%{opacity:1} }
+  .error-msg { display: none; background: rgba(168,76,47,0.08); border: 1px solid rgba(168,76,47,0.3); border-radius: 10px; padding: 14px 18px; color: var(--rust); font-size: 0.9rem; margin-bottom: 20px; }
+  .error-msg.visible { display: block; }
+
+  /* Knowledge Panel */
+  .knowledge-card { background: var(--card); border: 1px solid rgba(42,107,110,0.25); border-radius: 16px; padding: 28px; margin-bottom: 24px; box-shadow: 0 4px 24px rgba(26,18,9,0.06); }
+  .knowledge-card h2 { font-family: 'Playfair Display', serif; font-size: 1.3rem; font-weight: 400; font-style: italic; margin-bottom: 6px; }
+  .knowledge-card .subtitle { font-size: 0.9rem; color: var(--muted); margin-bottom: 24px; }
+  .ingest-tabs { display: flex; gap: 4px; margin-bottom: 20px; }
+  .ingest-tab { font-family: 'DM Mono', monospace; font-size: 0.65rem; letter-spacing: 0.1em; text-transform: uppercase; padding: 7px 16px; border: 1px solid rgba(201,147,58,0.3); border-radius: 6px; cursor: pointer; background: none; color: var(--muted); transition: all 0.2s; }
+  .ingest-tab.active { background: var(--teal); border-color: var(--teal); color: white; }
+  .ingest-tab:hover:not(.active) { border-color: var(--teal); color: var(--teal); }
+  .ingest-panel { display: none; }
+  .ingest-panel.active { display: block; }
+  .seed-row { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; background: rgba(42,107,110,0.06); border: 1px solid rgba(42,107,110,0.2); border-radius: 10px; margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
+  .seed-row p { font-size: 0.95rem; color: var(--muted); }
+  .drop-zone { border: 2px dashed rgba(201,147,58,0.35); border-radius: 12px; padding: 36px 24px; text-align: center; cursor: pointer; transition: all 0.2s; background: var(--parchment); }
+  .drop-zone:hover, .drop-zone.drag-over { border-color: var(--gold); background: rgba(201,147,58,0.05); }
+  .drop-zone-icon { font-size: 32px; margin-bottom: 10px; }
+  .drop-zone p { font-size: 0.95rem; color: var(--muted); }
+  .drop-zone input[type=file] { display: none; }
+  .file-selected { font-family: 'DM Mono', monospace; font-size: 0.7rem; color: var(--teal); margin-top: 10px; display: none; }
+  .success-msg { display: none; background: rgba(42,107,110,0.08); border: 1px solid rgba(42,107,110,0.3); border-radius: 8px; padding: 12px 16px; color: var(--teal); font-family: 'DM Mono', monospace; font-size: 0.7rem; margin-top: 12px; }
+  .success-msg.visible { display: block; }
+
+  footer { text-align: center; padding: 32px 0 48px; border-top: 1px solid rgba(201,147,58,0.2); margin-top: 32px; }
+  footer p { font-family: 'DM Mono', monospace; font-size: 0.65rem; letter-spacing: 0.1em; color: var(--muted); }
+  footer a { color: var(--gold); text-decoration: none; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <span class="globe-icon">🌍</span>
+    <h1>Cultura<span>RAG</span></h1>
+    <p class="tagline">AI Knowledge Explorer for World Cultures & Languages</p>
+    <div class="header-pills">
+      <span class="pill pill-gold">FAISS Vector Search</span>
+      <span class="pill pill-teal">LangChain RAG</span>
+      <span class="pill pill-rust">LLaMA 3.1 · Groq</span>
+    </div>
+  </header>
+
+  <div class="tab-nav">
+    <button class="tab-btn active" onclick="switchTab('explore')">🌍 Explore Cultures</button>
+    <button class="tab-btn" onclick="switchTab('knowledge')">📚 Add Knowledge</button>
+  </div>
+
+  <!-- ── EXPLORE TAB ── -->
+  <div class="tab-panel active" id="tab-explore">
+
+    <div class="examples">
+      <p class="examples-title">Try asking about</p>
+      <div class="example-chips">
+        <span class="chip" onclick="setQuestion('What are the main traditions of Diwali?')">🪔 Diwali traditions</span>
+        <span class="chip" onclick="setQuestion('Explain the Ubuntu philosophy from Africa')">🌍 Ubuntu philosophy</span>
+        <span class="chip" onclick="setQuestion('What happens during the Japanese Hanami festival?')">🌸 Japanese Hanami</span>
+        <span class="chip" onclick="setQuestion('Tell me about Día de los Muertos in Mexico')">💀 Día de los Muertos</span>
+        <span class="chip" onclick="setQuestion('What is the significance of Ramadan?')">🌙 Ramadan</span>
+        <span class="chip" onclick="setQuestion('Describe Chinese New Year traditions')">🧧 Chinese New Year</span>
+      </div>
+    </div>
+
+    <div class="query-card">
+      <h2>✦ Ask a cultural question</h2>
+      <div class="field" style="margin-bottom:16px">
+        <label>Your Question</label>
+        <textarea id="question" placeholder="e.g. What are the traditions of the Japanese Obon festival?"></textarea>
+      </div>
+      <div class="form-row">
+        <div class="field">
+          <label>Response Language</label>
+          <select id="language">
+            <option value="en">English</option>
+            <option value="es">Spanish</option>
+            <option value="fr">French</option>
+            <option value="de">German</option>
+            <option value="ja">Japanese</option>
+            <option value="zh">Chinese</option>
+            <option value="ar">Arabic</option>
+            <option value="hi">Hindi</option>
+            <option value="pt">Portuguese</option>
+            <option value="ko">Korean</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Culture Filter (optional)</label>
+          <input type="text" id="cultureFilter" placeholder="e.g. Japanese, Indian…">
+        </div>
+      </div>
+      <button class="btn-primary" id="btnAsk" onclick="askQuestion()">
+        <span>✦ Explore this culture</span>
+      </button>
+    </div>
+
+    <div class="error-msg" id="errorMsg"></div>
+    <div class="loading" id="loading"><div class="loading-orb"></div><p>Searching cultural knowledge…</p></div>
+    <div class="chat-history" id="chatHistory"></div>
+
+    <div class="followup-bar" id="followupBar">
+      <label>↩ Ask a follow-up question about this topic</label>
+      <div class="followup-row">
+        <input type="text" id="followupInput" placeholder="e.g. What are the regional variations? How did this tradition start?">
+        <button class="btn-followup" id="btnFollowup" onclick="sendFollowup()">Ask →</button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ── KNOWLEDGE TAB ── -->
+  <div class="tab-panel" id="tab-knowledge">
+    <div class="knowledge-card">
+      <h2>📚 Add Cultural Knowledge</h2>
+      <p class="subtitle">Expand the knowledge base with your own cultural texts, PDFs, or documents. The AI will use these when answering questions.</p>
+
+      <div class="seed-row">
+        <p><strong>Quick start:</strong> Load 6 built-in world cultures — Diwali, Hanami, Ramadan, Ubuntu, Día de los Muertos & Chinese New Year</p>
+        <button class="btn-secondary" id="btnSeed" onclick="seedData()">🌱 Seed Built-in Data</button>
+      </div>
+
+      <div class="ingest-tabs">
+        <button class="ingest-tab active" onclick="switchIngest('text')">✏️ Paste Text</button>
+        <button class="ingest-tab" onclick="switchIngest('file')">📄 Upload PDF / DOCX</button>
+      </div>
+
+      <!-- Text Panel -->
+      <div class="ingest-panel active" id="ingest-text">
+        <div class="field" style="margin-bottom:14px">
+          <label>Cultural Text</label>
+          <textarea id="ingestText" style="min-height:130px" placeholder="Paste any cultural text here — festival descriptions, traditions, historical context, language guides, recipes, folklore…"></textarea>
+        </div>
+        <div class="form-row">
+          <div class="field">
+            <label>Source Name</label>
+            <input type="text" id="ingestSource" placeholder="e.g. Wikipedia — Obon Festival">
+          </div>
+          <div class="field">
+            <label>Culture / Region</label>
+            <input type="text" id="ingestCulture" placeholder="e.g. Japanese">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="field">
+            <label>Language</label>
+            <select id="ingestLang">
+              <option value="en">English</option>
+              <option value="es">Spanish</option>
+              <option value="fr">French</option>
+              <option value="ja">Japanese</option>
+              <option value="zh">Chinese</option>
+              <option value="ar">Arabic</option>
+              <option value="hi">Hindi</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Tags (comma separated)</label>
+            <input type="text" id="ingestTags" placeholder="e.g. festival, religion, food">
+          </div>
+        </div>
+        <button class="btn-primary" id="btnIngestText" onclick="ingestText()"><span>✦ Add to Knowledge Base</span></button>
+        <div class="success-msg" id="textSuccessMsg"></div>
+      </div>
+
+      <!-- File Panel -->
+      <div class="ingest-panel" id="ingest-file">
+        <div class="drop-zone" id="dropZone" onclick="document.getElementById('fileInput').click()" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event)">
+          <div class="drop-zone-icon">📄</div>
+          <p><strong>Click to upload</strong> or drag & drop</p>
+          <p style="font-size:0.8rem;margin-top:6px">Supports PDF and DOCX files</p>
+          <input type="file" id="fileInput" accept=".pdf,.docx" onchange="handleFileSelect(event)">
+          <div class="file-selected" id="fileSelected"></div>
+        </div>
+        <div class="form-row" style="margin-top:16px">
+          <div class="field">
+            <label>Source Name</label>
+            <input type="text" id="fileSource" placeholder="e.g. Cultural Guide PDF">
+          </div>
+          <div class="field">
+            <label>Culture / Region</label>
+            <input type="text" id="fileCulture" placeholder="e.g. Indian">
+          </div>
+        </div>
+        <button class="btn-primary" id="btnIngestFile" onclick="ingestFile()"><span>✦ Upload & Ingest File</span></button>
+        <div class="success-msg" id="fileSuccessMsg"></div>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <p>CulturaRAG · FastAPI · LangChain · FAISS · LLaMA 3.1 via Groq · <a href="http://localhost:8000/docs" target="_blank">API Docs ↗</a></p>
+  </footer>
+</div>
+
+<script>
+  const API = 'http://localhost:8000/api/v1';
+  let chatHistory = [];
+  let selectedFile = null;
+
+  function switchTab(tab) {
+    document.querySelectorAll('.tab-btn').forEach((b,i) => b.classList.toggle('active', ['explore','knowledge'][i] === tab));
+    document.getElementById('tab-explore').classList.toggle('active', tab==='explore');
+    document.getElementById('tab-knowledge').classList.toggle('active', tab==='knowledge');
+  }
+
+  function switchIngest(type) {
+    document.querySelectorAll('.ingest-tab').forEach((b,i) => b.classList.toggle('active', ['text','file'][i]===type));
+    document.getElementById('ingest-text').classList.toggle('active', type==='text');
+    document.getElementById('ingest-file').classList.toggle('active', type==='file');
+  }
+
+  function setQuestion(q) { document.getElementById('question').value = q; document.getElementById('question').focus(); }
+
+  async function askQuestion() {
+    const q = document.getElementById('question').value.trim();
+    if (!q) return;
+    await doQuery(q, document.getElementById('language').value, document.getElementById('cultureFilter').value.trim()||null, false);
+    document.getElementById('question').value = '';
+  }
+
+  async function sendFollowup() {
+    const input = document.getElementById('followupInput');
+    const q = input.value.trim();
+    if (!q) return;
+    input.value = '';
+    await doQuery(q, document.getElementById('language').value, document.getElementById('cultureFilter').value.trim()||null, true);
+  }
+
+  async function doQuery(question, language, cultureFilter, isFollowup) {
+    document.getElementById('errorMsg').className = 'error-msg';
+    document.getElementById('loading').className = 'loading active';
+    document.getElementById('btnAsk').disabled = true;
+    document.getElementById('btnFollowup').disabled = true;
+    document.getElementById('followupBar').classList.remove('visible');
+
+    try {
+      const res = await fetch(`${API}/query/`, {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({question, language, culture_filter: cultureFilter, top_k: 5})
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || 'Something went wrong');
+      chatHistory.push({question, answer: data.answer, queryId: data.query_id, sources: data.sources, latency: data.latency_ms, model: data.model_used, lang: data.language, isFollowup});
+      renderChat();
+    } catch(err) {
+      const el = document.getElementById('errorMsg');
+      el.textContent = '⚠ ' + err.message;
+      el.className = 'error-msg visible';
+    } finally {
+      document.getElementById('loading').className = 'loading';
+      document.getElementById('btnAsk').disabled = false;
+      document.getElementById('btnFollowup').disabled = false;
+      document.getElementById('followupBar').classList.add('visible');
+    }
+  }
+
+  function renderChat() {
+    const c = document.getElementById('chatHistory');
+    c.innerHTML = chatHistory.map((t,i) => `
+      <div class="chat-turn">
+        <div class="chat-question"><div class="chat-question-bubble">${esc(t.question)}</div></div>
+        <div class="chat-answer">
+          <div class="chat-answer-header">
+            <span class="meta-badge">${t.model}</span>
+            <span class="meta-badge">${Math.round(t.latency)}ms</span>
+            <span class="meta-badge">${t.lang.toUpperCase()}</span>
+            ${t.isFollowup ? '<span class="meta-badge meta-followup">follow-up</span>' : ''}
+          </div>
+          <div class="chat-answer-body">${esc(t.answer)}</div>
+          ${t.sources&&t.sources.length ? `
+          <div class="chat-sources">
+            <div class="sources-title">Sources used</div>
+            <div class="source-chips">${t.sources.map(s=>`<span class="source-chip" title="${esc(s.content)}">${esc(s.source)}${s.culture?' · '+esc(s.culture):''} (${(s.score*100).toFixed(0)}%)</span>`).join('')}</div>
+          </div>` : ''}
+          <div class="chat-feedback">
+            <span class="feedback-label">Helpful?</span>
+            <button class="btn-feedback" id="up-${i}" onclick="feedback('${t.queryId}','up',${i})">👍</button>
+            <button class="btn-feedback" id="dn-${i}" onclick="feedback('${t.queryId}','down',${i})">👎</button>
+          </div>
+        </div>
+      </div>`).join('');
+    c.lastElementChild?.scrollIntoView({behavior:'smooth',block:'end'});
+  }
+
+  function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+  async function feedback(qid, thumbs, idx) {
+    try {
+      await fetch(`${API}/feedback/`, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({query_id:qid, rating:thumbs==='up'?5:2, thumbs})});
+      document.getElementById(`up-${idx}`)?.classList.toggle('active', thumbs==='up');
+      document.getElementById(`dn-${idx}`)?.classList.toggle('active', thumbs==='down');
+    } catch {}
+  }
+
+  async function seedData() {
+    const btn = document.getElementById('btnSeed');
+    btn.disabled=true; btn.textContent='⏳ Seeding…';
+    try {
+      const res = await fetch(`${API}/ingest/seed`, {method:'POST'});
+      const data = await res.json();
+      btn.textContent='✅ Seeded!';
+      showSuccess('textSuccessMsg', `✅ Seeded ${data.chunks_added||''} chunks of cultural data! Switch to Explore tab to start asking questions.`);
+    } catch { btn.textContent='❌ Failed'; btn.disabled=false; }
+  }
+
+  async function ingestText() {
+    const text = document.getElementById('ingestText').value.trim();
+    const source = document.getElementById('ingestSource').value.trim();
+    if (!text||!source) { alert('Please fill in the text and source name.'); return; }
+    const btn = document.getElementById('btnIngestText');
+    btn.disabled=true;
+    try {
+      const tags = document.getElementById('ingestTags').value.split(',').map(t=>t.trim()).filter(Boolean);
+      const res = await fetch(`${API}/ingest/text`, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({text, source, culture: document.getElementById('ingestCulture').value.trim()||null, language: document.getElementById('ingestLang').value, tags})});
+      const data = await res.json();
+      showSuccess('textSuccessMsg', `✅ Added ${data.chunks_added} chunks from "${source}" to the knowledge base!`);
+      document.getElementById('ingestText').value='';
+      document.getElementById('ingestSource').value='';
+    } catch(err) { showSuccess('textSuccessMsg', '❌ '+err.message); }
+    finally { btn.disabled=false; }
+  }
+
+  function handleDragOver(e) { e.preventDefault(); document.getElementById('dropZone').classList.add('drag-over'); }
+  function handleDragLeave() { document.getElementById('dropZone').classList.remove('drag-over'); }
+  function handleDrop(e) { e.preventDefault(); document.getElementById('dropZone').classList.remove('drag-over'); if(e.dataTransfer.files[0]) setFile(e.dataTransfer.files[0]); }
+  function handleFileSelect(e) { if(e.target.files[0]) setFile(e.target.files[0]); }
+  function setFile(f) { selectedFile=f; const el=document.getElementById('fileSelected'); el.textContent='📎 '+f.name+' ('+(f.size/1024).toFixed(1)+' KB)'; el.style.display='block'; }
+
+  async function ingestFile() {
+    if (!selectedFile) { alert('Please select a file first.'); return; }
+    const btn = document.getElementById('btnIngestFile');
+    btn.disabled=true;
+    const fd = new FormData();
+    fd.append('file', selectedFile);
+    fd.append('source', document.getElementById('fileSource').value.trim()||selectedFile.name);
+    fd.append('culture', document.getElementById('fileCulture').value.trim()||'');
+    fd.append('language','en');
+    try {
+      const res = await fetch(`${API}/ingest/file`, {method:'POST', body:fd});
+      const data = await res.json();
+      showSuccess('fileSuccessMsg', `✅ Ingested! Added ${data.chunks_added} chunks.`);
+      selectedFile=null; document.getElementById('fileInput').value=''; document.getElementById('fileSelected').style.display='none';
+    } catch(err) { showSuccess('fileSuccessMsg','❌ '+err.message); }
+    finally { btn.disabled=false; }
+  }
+
+  function showSuccess(id, msg) {
+    const el=document.getElementById(id); el.textContent=msg; el.className='success-msg visible';
+    setTimeout(()=>el.className='success-msg', 6000);
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('question').addEventListener('keydown', e=>{ if(e.key==='Enter'&&(e.metaKey||e.ctrlKey)) askQuestion(); });
+    document.getElementById('followupInput').addEventListener('keydown', e=>{ if(e.key==='Enter') sendFollowup(); });
+  });
+</script>
+</body>
+</html>

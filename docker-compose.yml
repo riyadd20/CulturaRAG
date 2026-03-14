@@ -1,0 +1,20 @@
+version: "3.9"
+
+services:
+  culturarag:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - GEMINI_MODEL=gemini-1.5-pro
+      - FAISS_INDEX_PATH=/app/data/faiss_index
+      - FEEDBACK_LOG_PATH=/app/data/feedback_log.jsonl
+    volumes:
+      - ./data:/app/data      # Persist FAISS index & feedback across restarts
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/status/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
