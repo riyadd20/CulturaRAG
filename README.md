@@ -1,9 +1,8 @@
-# 🌍 CulturaRAG — AI Knowledge Explorer for World Cultures & Languages
+# CulturaRAG: AI Knowledge Explorer for World Cultures & Languages
 
-A production-ready **Retrieval-Augmented Generation (RAG)** system that combines
-**FAISS vector search**, **LangChain orchestration**, and **Google Gemini** to deliver
-nuanced, multilingual cultural insights — with a built-in **RLHF feedback loop** and
-**LoRA fine-tuning** pipeline.
+CulturaRAG is a Retrieval-Augmented Generation (RAG) system designed to explore cultural knowledge across languages. It combines semantic search (FAISS), LLM-based generation (Google Gemini), and a feedback-driven improvement loop using RLHF and LoRA fine-tuning.
+
+The goal is to provide **context-aware, multilingual answers** while continuously improving from user feedback.
 
 ---
 
@@ -12,214 +11,156 @@ nuanced, multilingual cultural insights — with a built-in **RLHF feedback loop
 ```
 ┌──────────────────────────────────────────────────────────┐
 │                     FastAPI Backend                       │
-│                                                           │
-│  POST /query  ──►  RAGChain                               │
-│                      │                                    │
-│                      ├─► FAISS Vector Search              │
-│                      │     (multilingual SentenceTransformer)
-│                      │                                    │
-│                      └─► Google Gemini (LangChain)        │
-│                            context-grounded generation    │
-│                                                           │
-│  POST /ingest ──►  IngestionService                       │
-│                      text chunker → FAISS index           │
-│                                                           │
-│  POST /feedback ─► FeedbackService → JSONL log            │
-│                      │                                    │
-│                      └─► LoRA fine-tuning pipeline        │
-│                           (PEFT, preference pairs)        │
+│                                                          │
+│  POST /query  →  RAG Pipeline                            │
+│                     │                                    │
+│                     ├─ FAISS Vector Search               │
+│                     │   (multilingual embeddings)        │
+│                     │                                    │
+│                     └─ Gemini (via LangChain)            │
+│                         context-based generation         │
+│                                                          │
+│  POST /ingest →  Text Chunking → FAISS Index             │
+│                                                          │
+│  POST /feedback → Feedback Log (JSONL)                   │
+│                     │                                    │
+│                     └─ LoRA Fine-tuning Pipeline         │
 └──────────────────────────────────────────────────────────┘
 ```
 
-## Tech Stack
+### How it works
 
-| Layer | Technology |
-|-------|-----------|
-| API Framework | FastAPI + Uvicorn |
-| LLM Orchestration | LangChain |
-| Language Model | Google Gemini 1.5 Pro |
-| Vector Store | FAISS (IndexFlatIP, cosine similarity) |
-| Embeddings | `paraphrase-multilingual-MiniLM-L12-v2` (SentenceTransformers) |
-| RLHF / Fine-tuning | PEFT / LoRA (`peft`, `transformers`, `datasets`) |
-| Document Parsing | PyPDF, python-docx |
-| Config | Pydantic Settings + dotenv |
-| Logging | Loguru |
-| Testing | Pytest |
-| Containerization | Docker + docker-compose |
+1. A query is sent to the API
+2. Relevant documents are retrieved using FAISS
+3. Retrieved context is passed to Gemini for response generation
+4. Feedback is stored and later used for fine-tuning
 
 ---
 
-## Quick Start
+## Tech Stack
 
-### 1. Clone & Install
+* **Backend:** FastAPI + Uvicorn
+* **LLM Orchestration:** LangChain
+* **Model:** Google Gemini 1.5 Pro
+* **Vector Store:** FAISS (cosine similarity)
+* **Embeddings:** SentenceTransformers (`paraphrase-multilingual-MiniLM-L12-v2`)
+* **Fine-tuning:** PEFT / LoRA
+* **Parsing:** PyPDF, python-docx
+* **Config:** Pydantic + dotenv
+* **Testing:** Pytest
+* **Containerization:** Docker
+
+---
+
+## Getting Started
+
+### 1. Clone the repository
 
 ```bash
-git clone https://github.com/your-org/culturarag.git
+git clone https://github.com/your-username/culturarag.git
 cd culturarag
+```
 
+---
+
+### 2. Set up the environment
+
+```bash
 python -m venv venv
-source venv/bin/activate          # Windows: venv\Scripts\activate
+source venv/bin/activate   # Windows: venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-### 2. Configure Environment
+---
+
+### 3. Configure environment variables
 
 ```bash
 cp .env.example .env
-# Edit .env and set your GEMINI_API_KEY
 ```
 
-Get a free Gemini API key at: https://aistudio.google.com/app/apikey
-
-### 3. Run the Server
-
-```bash
-python run.py
-# → http://localhost:8000
-# → http://localhost:8000/docs  (Swagger UI)
-```
-
-On first launch, the server auto-seeds the index with 6 diverse cultural documents
-(Diwali, Hanami, Día de los Muertos, Ramadan, Ubuntu philosophy, Chinese New Year).
+Add your Gemini API key in the `.env` file.
 
 ---
 
-## API Endpoints
+### 4. Run the server
 
-### Ask a Cultural Question
+```bash
+python run.py
+```
+
+* API: http://localhost:8000
+* Docs: http://localhost:8000/docs
+
+On first run, the system seeds the vector database with sample cultural data.
+
+---
+
+## API Usage
+
+### Query the system
+
 ```bash
 curl -X POST http://localhost:8000/api/v1/query/ \
   -H "Content-Type: application/json" \
   -d '{
-    "question": "What is the significance of the sakura in Japanese culture?",
-    "language": "en",
-    "culture_filter": "Japanese",
-    "top_k": 5
-  }'
-```
-
-### Multilingual Query (respond in Spanish)
-```bash
-curl -X POST http://localhost:8000/api/v1/query/ \
-  -H "Content-Type: application/json" \
-  -d '{
-    "question": "Explain the Ubuntu philosophy from Africa",
-    "language": "es"
-  }'
-```
-
-### Ingest New Cultural Text
-```bash
-curl -X POST http://localhost:8000/api/v1/ingest/text \
-  -H "Content-Type: application/json" \
-  -d '{
-    "text": "The Scottish Highland Games feature athletic events like caber tossing...",
-    "source": "Scottish Culture Guide",
-    "culture": "Scottish",
+    "question": "What is the significance of sakura in Japanese culture?",
     "language": "en"
   }'
 ```
 
-### Upload a PDF
-```bash
-curl -X POST http://localhost:8000/api/v1/ingest/file \
-  -F "file=@my_cultural_doc.pdf" \
-  -F "source=My PDF Source" \
-  -F "culture=Greek"
-```
+---
 
-### Submit RLHF Feedback
-```bash
-curl -X POST http://localhost:8000/api/v1/feedback/ \
-  -H "Content-Type: application/json" \
-  -d '{
-    "query_id": "returned-query-id-here",
-    "rating": 4,
-    "thumbs": "up",
-    "comment": "Very thorough explanation of the festival origins",
-    "corrected_answer": null
-  }'
-```
+### Multilingual query
 
-### Check Index Status
-```bash
-curl http://localhost:8000/api/v1/status/
+```json
+{
+  "question": "Explain the Ubuntu philosophy",
+  "language": "es"
+}
 ```
 
 ---
 
-## RLHF & LoRA Fine-tuning Pipeline
+### Ingest new content
 
+```bash
+POST /api/v1/ingest/text
 ```
-User rates a response
-       │
-       ▼
-FeedbackService.record()
-  → appends to data/feedback_log.jsonl
-  → {query_id, rating, corrected_answer, ...}
-       │
-       ▼
-GET /api/v1/feedback/export
-  → returns preference pairs (chosen / rejected)
-       │
-       ▼
+
+You can also upload documents using `/api/v1/ingest/file`.
+
+---
+
+### Submit feedback
+
+```bash
+POST /api/v1/feedback
+```
+
+Feedback is stored and later used to improve the system.
+
+---
+
+## Feedback Loop & Fine-tuning
+
+The system includes a lightweight RLHF pipeline:
+
+1. User feedback is recorded
+2. Data is stored in `feedback_log.jsonl`
+3. High-quality examples are extracted
+4. LoRA fine-tuning is run offline
+
+Example:
+
+```bash
 python -m app.utils.lora_finetune \
   --dataset ./data/feedback_log.jsonl \
   --base-model google/gemma-2b \
-  --output-dir ./data/lora_adapters \
-  --rank 16 --alpha 32 --epochs 3
-       │
-       ▼
-LoRA adapter saved → load adapter at inference time
+  --output-dir ./data/lora_adapters
 ```
 
-### When to Fine-tune
-- Collect at least **100+ corrected answers** (feedback with `corrected_answer` set)
-- High-confidence pairs: `rating >= 4` are selected by default
-- Run as an offline batch job (separate from the API server)
-
----
-
-## Running Tests
-
-```bash
-pytest tests/ -v --tb=short
-```
-
----
-
-## Docker Deployment
-
-```bash
-# Set your API key
-export GEMINI_API_KEY=your_key_here
-
-# Build and run
-docker-compose up --build
-
-# The FAISS index & feedback logs persist in ./data/
-```
-
----
-
-## Extending the Knowledge Base
-
-Add new cultural sources by:
-1. **REST API**: `POST /api/v1/ingest/text` or `/ingest/file`
-2. **Seeding script**: Edit `app/services/ingestion.py → ingest_sample_cultural_data()`
-3. **Bulk ingestion**: Use `IngestionService` directly in a script
-
-```python
-from app.services.ingestion import get_ingestion_service
-
-svc = get_ingestion_service()
-svc.ingest_text(
-    text=open("my_wiki_article.txt").read(),
-    source="Wikipedia — Māori Culture",
-    culture="Maori",
-    language="en",
-)
-```
+This allows iterative improvement without retraining the full model.
 
 ---
 
@@ -228,32 +169,44 @@ svc.ingest_text(
 ```
 culturarag/
 ├── app/
-│   ├── main.py              # FastAPI app factory + lifespan
-│   ├── core/
-│   │   └── config.py        # Pydantic settings
-│   ├── models/
-│   │   └── schemas.py       # Request/Response models
-│   ├── api/
-│   │   └── routes.py        # All API routers
-│   ├── services/
-│   │   ├── rag_chain.py     # FAISS → Prompt → Gemini pipeline
-│   │   ├── vector_store.py  # FAISS index management
-│   │   ├── ingestion.py     # Text chunking & document ingestion
-│   │   └── feedback.py      # RLHF feedback collection
-│   └── utils/
-│       └── lora_finetune.py # LoRA/PEFT fine-tuning script
-├── tests/
-│   └── test_culturarag.py   # Pytest test suite
-├── data/                    # Runtime data (gitignored)
-│   ├── faiss_index/         # Persisted FAISS index
-│   ├── feedback_log.jsonl   # RLHF feedback records
-│   └── lora_adapters/       # Trained LoRA weights
-├── Dockerfile
+│   ├── api/          # API routes
+│   ├── services/     # RAG, ingestion, feedback logic
+│   ├── models/       # Data schemas
+│   ├── core/         # Configuration
+│   └── utils/        # Fine-tuning scripts
+├── data/             # Runtime data (gitignored)
+├── tests/            # Test suite
 ├── docker-compose.yml
 ├── requirements.txt
-├── .env.example
 └── run.py
 ```
+
+---
+
+## Running Tests
+
+```bash
+pytest tests/
+```
+
+---
+
+## Docker Deployment
+
+```bash
+docker-compose up --build
+```
+
+The FAISS index and feedback logs are persisted in the `data/` directory.
+
+---
+
+## Future Improvements
+
+* Improve multilingual retrieval quality
+* Add evaluation metrics for responses
+* Automate the fine-tuning workflow
+* Add authentication and rate limiting
 
 ---
 
