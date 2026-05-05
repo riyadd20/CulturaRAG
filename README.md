@@ -207,9 +207,3 @@ The FAISS index and feedback logs are persisted in the `data/` directory.
 * Add evaluation metrics for responses
 * Automate the fine-tuning workflow
 * Add authentication and rate limiting
-
----
-
-## License
-
-MIT
